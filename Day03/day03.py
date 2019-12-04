@@ -6,8 +6,8 @@ def read_input(file_location):
         second_wire = f.readline().split(",")
     return first_wire, second_wire
 
-def update_min_distance(min_distance, x, y, starting_point):
-    dist = abs(x - starting_point[0]) + abs(y - starting_point[1])
+def update_min_distance(min_distance, x, y):
+    dist = abs(x) + abs(y)
     if min_distance is None or dist < min_distance:
         print(f"Min distance changes from {min_distance} to {dist}.")
         min_distance = dist
@@ -26,8 +26,8 @@ def set_current_coordinates(dir, cur_x, cur_y, index):
     elif dir == "D":
         return cur_x, cur_y - index
 
-def layout_wire(wire, starting_point, find_distance=False):
-    current_point, min_distance = starting_point, None
+def layout_wire(wire, find_distance=False, prev_wire_positions=None):
+    current_point, min_distance, wire_positions = (0, 0), None, set([])
     for i in wire:
         # get the current instruction
         direction, distance = extract_instruction(i)
@@ -45,16 +45,16 @@ def layout_wire(wire, starting_point, find_distance=False):
             x_val, y_val = set_current_coordinates(direction, current_x, current_y, j)
 
             # update min_distance if necessary
-            if find_distance and grid[x_val][y_val] == "-":
-                min_distance = update_min_distance(min_distance, x_val, y_val, starting_point)
+            if find_distance and (x_val, y_val) in prev_wire_positions:
+                min_distance = update_min_distance(min_distance, x_val, y_val)
             
             # update value in grid
-            grid[x_val][y_val] = "-"
+            wire_positions.add((x_val, y_val))
         
         # update the current point
         current_point = (x_val, y_val)
 
-    return grid, min_distance
+    return wire_positions, min_distance
 
 def perform_calculation(input_file="Day03/day03.txt", grid_size=20000):
     first_wire, second_wire = read_input(input_file)
@@ -65,8 +65,8 @@ def perform_calculation(input_file="Day03/day03.txt", grid_size=20000):
 
     starting_point = (grid_size // 2, grid_size // 2)
     grid[starting_point[0]][starting_point[1]] = "o"
-    layed_out_grid, _ = layout_wire(first_wire, grid, starting_point)
-    final_grid, min_dist = layout_wire(second_wire, layed_out_grid, starting_point, find_distance=True)
+    layed_out_grid, _ = layout_wire(first_wire)
+    final_grid, min_dist = layout_wire(second_wire, find_distance=True, prev_wire_positions=layed_out_grid)
 
     print(f"Min distance is: {min_dist}.")
     return min_dist
@@ -81,10 +81,10 @@ def test_read_input():
     assert len(test_wire_3) == 4
 
 def test_distance_calc():
-    assert update_min_distance(None, 4, 4, (1, 1)) == 6
-    assert update_min_distance(8, 4, 4, (1, 1)) == 6
-    assert update_min_distance(4, 4, 4, (1, 1)) == 4
-    assert update_min_distance(None, 89, 54, (32, 56)) == 59
+    assert update_min_distance(None, 4, 4) == 8
+    assert update_min_distance(10, 4, 4) == 8
+    assert update_min_distance(4, 4, 4) == 4
+    assert update_min_distance(None, 89, 54) == 143
 
 def test_extract_instructions():
     first_test = extract_instruction("R37")
